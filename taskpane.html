@@ -45,6 +45,29 @@
             <select id="model-select" disabled><option value="">Open Settings to load models…</option></select>
           </div>
         </div>
+        <div class="language-setting">
+          <label class="input-label" for="translation-language">Translate to</label>
+          <div class="language-input-row">
+            <input id="translation-language" type="text" list="translation-language-options" maxlength="80" value="Traditional Chinese (Taiwan)" autocomplete="off" />
+            <button id="save-language" type="button">Save</button>
+            <datalist id="translation-language-options">
+              <option value="Traditional Chinese (Taiwan)"></option>
+              <option value="Simplified Chinese"></option>
+              <option value="English"></option>
+              <option value="Japanese"></option>
+              <option value="Korean"></option>
+              <option value="French"></option>
+              <option value="Spanish"></option>
+              <option value="German"></option>
+              <option value="Italian"></option>
+              <option value="Portuguese"></option>
+              <option value="Arabic"></option>
+              <option value="Hindi"></option>
+              <option value="Thai"></option>
+              <option value="Vietnamese"></option>
+            </datalist>
+          </div>
+        </div>
       </section>
 
       <div id="input-area" hidden>
@@ -53,7 +76,7 @@
       </div>
 
       <section id="actions" class="actions" aria-label="Email actions" hidden>
-        <button id="translate" type="button" disabled>Translate</button>
+        <button id="translate" class="secondary" type="button" disabled>Translate</button>
         <button id="suggest" class="secondary" type="button" disabled>Suggest Reply</button>
       </section>
 

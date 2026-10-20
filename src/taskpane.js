@@ -1,6 +1,7 @@
 /* global Office */
 const byId = (id) => document.getElementById(id);
-const state = { mailbox: "", allowed: false, connected: false, connecting: false, busy: false, modelsLoaded: false, mode: "email", conversationActive: false, context: null, thread: [] };
+const DEFAULT_TRANSLATION_LANGUAGE = "Traditional Chinese (Taiwan)";
+const state = { mailbox: "", allowed: false, connected: false, connecting: false, busy: false, modelsLoaded: false, mode: "email", conversationActive: false, context: null, thread: [], translationLanguage: DEFAULT_TRANSLATION_LANGUAGE };
 
 function setStatus(message, isError = false) {
   const node = byId("status");
@@ -153,6 +154,8 @@ function refreshButtons() {
   byId("connection-state").textContent = connectionText;
   byId("connection-dot").classList.toggle("is-connected", state.connected);
   byId("save-email").disabled = state.busy || !isEmail(byId("allowed-email").value.trim());
+  byId("translation-language").disabled = state.busy;
+  byId("save-language").disabled = state.busy || !byId("translation-language").value.trim();
 }
 
 function isEmail(value) {
@@ -183,13 +186,34 @@ async function saveAllowedEmail() {
   }
 }
 
+async function saveTranslationLanguage() {
+  const translationLanguage = byId("translation-language").value.trim();
+  if (!translationLanguage) {
+    setStatus("Enter a language to translate into.", true);
+    return;
+  }
+  state.busy = true;
+  refreshButtons();
+  try {
+    const config = await request("/api/translation-language", { translationLanguage });
+    state.translationLanguage = config.translationLanguage;
+    byId("translation-language").value = state.translationLanguage;
+    setStatus(`Translation language saved: ${state.translationLanguage}`);
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    state.busy = false;
+    refreshButtons();
+  }
+}
+
 async function runAction(action) {
   state.busy = true;
   state.context = null;
   state.thread = [];
   state.conversationActive = false;
   byId("conversation").replaceChildren();
-  byId("result-title").textContent = action === "translate" ? "繁體中文翻譯" : "Suggested reply";
+  byId("result-title").textContent = action === "translate" ? `Translation · ${state.translationLanguage}` : "Suggested reply";
   byId("result").textContent = "";
   byId("result-card").hidden = false;
   byId("mode-wrap").hidden = true;
@@ -384,6 +408,8 @@ async function initialize() {
       const [config, session] = await Promise.all([request("/api/config"), request("/api/session")]);
       const allowedEmail = String(config.allowedOutlookEmail || "").trim().toLowerCase();
       byId("allowed-email").value = allowedEmail;
+      state.translationLanguage = String(config.translationLanguage || DEFAULT_TRANSLATION_LANGUAGE);
+      byId("translation-language").value = state.translationLanguage;
       state.allowed = Boolean(state.mailbox && allowedEmail && state.mailbox === allowedEmail);
       state.connected = session.connected;
       if (!config.allowedOutlookEmail) {
@@ -408,6 +434,8 @@ byId("suggest").addEventListener("click", () => runAction("suggest"));
 byId("connect").addEventListener("click", connect);
 byId("allowed-email").addEventListener("input", refreshButtons);
 byId("save-email").addEventListener("click", saveAllowedEmail);
+byId("translation-language").addEventListener("input", refreshButtons);
+byId("save-language").addEventListener("click", saveTranslationLanguage);
 byId("selected-text").addEventListener("input", refreshButtons);
 byId("follow-up-question").addEventListener("input", refreshButtons);
 byId("follow-up-question").addEventListener("keydown", (event) => {

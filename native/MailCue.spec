@@ -57,6 +57,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name="MailCue.app",
+    icon=str(PROJECT_DIR / "build" / "mailcue.icns"),
     bundle_identifier="com.mailcue.personal",
     info_plist={
         "CFBundleName": "MailCue",

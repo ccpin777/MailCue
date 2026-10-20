@@ -36,6 +36,20 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 node scripts/sync-version.mjs
+ICON_SOURCE="$PROJECT_DIR/assets/Icon 1024.png"
+ICONSET_DIR="$PROJECT_DIR/build/mailcue.iconset"
+mkdir -p "$ICONSET_DIR"
+make_icon_pair() {
+  local logical_size="$1" one_x_size="$2" two_x_size="$3"
+  sips -z "$one_x_size" "$one_x_size" "$ICON_SOURCE" --out "$ICONSET_DIR/icon_${logical_size}x${logical_size}.png" >/dev/null
+  sips -z "$two_x_size" "$two_x_size" "$ICON_SOURCE" --out "$ICONSET_DIR/icon_${logical_size}x${logical_size}@2x.png" >/dev/null
+}
+make_icon_pair 16 16 32
+make_icon_pair 32 32 64
+make_icon_pair 128 128 256
+make_icon_pair 256 256 512
+make_icon_pair 512 512 1024
+iconutil -c icns "$ICONSET_DIR" -o "$PROJECT_DIR/build/mailcue.icns"
 osascript -e 'tell application id "com.mailcue.personal" to quit' >/dev/null 2>&1 || true
 sleep 2
 "$PYTHON" -m PyInstaller --noconfirm --clean \

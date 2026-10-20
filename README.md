@@ -1,8 +1,14 @@
 # MailCue
 
+[繁體中文](README.zh-TW.md) · [User Guide](docs/user-guide.en.md)
+
 MailCue is licensed under the MIT License. See [LICENSE](LICENSE).
 
-A personal Outlook task pane with Email and Selected text modes. Translate email text to Traditional Chinese, draft a short English reply, and ask follow-up questions about the result. Responses appear progressively as they are generated. MailCue sends text to OpenAI only after you click and never sends email.
+A personal Outlook task pane with Email and Selected text modes. Translate email text into a configurable target language (Traditional Chinese (Taiwan) by default), draft a short English reply, and ask follow-up questions about the result. Responses appear progressively as they are generated. MailCue sends text to OpenAI only after you click and never sends email.
+
+## Why I built this
+
+MailCue is a personal vibe-coding project exploring how a ChatGPT subscription could work alongside Outlook to help translate emails and draft replies. I’d love to hear your experience, ideas, and thoughts on what else this kind of integration could do.
 
 ## Current status
 
@@ -14,6 +20,7 @@ The `package.json` version is canonical. The build command synchronizes the Outl
 - Outlook for Mac with custom Outlook add-ins enabled
 - A ChatGPT plan eligible to authorize plan usage
 - A locally trusted HTTPS certificate for `localhost` (see below)
+- A Python environment with PySide6 and PyInstaller in the parent workspace; the current build command expects this shared environment and does not install it
 
 ## Setup
 
@@ -47,7 +54,7 @@ The `package.json` version is canonical. The build command synchronizes the Outl
 
    Trust `~/Library/Application Support/MailCue/certs/localhost.pem` in macOS Keychain for the current user, then restart Outlook. The certificate includes `localhost` and `127.0.0.1` in its subject alternative names.
 
-5. To test the menu bar controller before packaging, quit any running MailCue app and double-click `Run.command`. It launches the Python source directly and keeps Terminal open for visible errors. When the source version works, double-click `commands/build-menubar-app.command` to build `dist/MailCue.app` with the same PySide6 and PyInstaller approach used by Coding Deck. After a successful build, it removes `build/`, `build-logs/`, and `dist/MailCue/`, keeping only `dist/MailCue.app`. Swift and Xcode are not used.
+5. To test the menu bar controller before packaging, quit any running MailCue app and double-click `Run.command`. It launches the Python source directly and keeps Terminal open for visible errors. When the source version works, double-click `commands/build-menubar-app.command` to build `dist/MailCue.app` with the same PySide6 and PyInstaller approach used by Coding Deck. The command expects the shared Python environment described above; a fresh clone outside that workspace cannot use it until the build environment is set up. After a successful build, it removes `build/`, `build-logs/`, and `dist/MailCue/`, keeping only `dist/MailCue.app`. Swift and Xcode are not used.
 
 6. In Outlook for Mac, sideload the project folder's `manifest.xml` using **Tools → Get Add-ins → My Add-ins → Add a custom add-in → Add from File**.
 

@@ -1,5 +1,12 @@
 # MailCue development log
 
+## 2026-10-20 — Configurable translation language
+
+- Added a **Translate to** field in Settings with common language suggestions and a default of **Traditional Chinese (Taiwan)**. Users can enter another language name and save it locally.
+- The Bridge persists the selected language in the existing private config file and uses it for Translate requests. Existing config files without this setting continue to default to Traditional Chinese (Taiwan).
+- No Outlook manifest change is needed. The packaged menu bar app must be rebuilt to include the updated task pane and Bridge; the existing sideloaded add-in can keep its manifest.
+- Static source review only; no tests, packaging, or target-Mac verification were run.
+
 ## 2026-10-20 — Version 0.3 menu bar controller
 
 - Added a macOS menu bar app with the English menu items **Turn On**, **Turn Off**, **Launch at Login**, and **Quit MailCue**, using the same PySide6 and PyInstaller approach as Coding Deck.
