@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MailCue Layout Preview</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #192438; background: #eef2f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px 16px; }
+    main { max-width: 430px; margin: 0 auto; }
+    .preview-note { margin: 0 0 14px; color: #65738a; font-size: 12px; line-height: 1.4; }
+    .preview-actions { display: flex; flex-wrap: wrap; gap: 7px; margin: -6px 0 14px; }
+    .preview-toggle { padding: 5px 8px; border: 1px solid #d4dce6; border-radius: 7px; background: white; color: #3159a8; font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .pane { padding: 18px; border-radius: 12px; background: #fff; box-shadow: 0 4px 18px #26375018; }
+    .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 16px; }
+    .top-button { display: flex; min-width: 0; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; border: 1px solid #d4dce6; border-radius: 9px; background: white; color: #26364f; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .top-button:hover { background: #f7f9fc; }
+    .mode-wrap { position: relative; }
+    .mode-wrap .top-button { width: 100%; }
+    .mode-value { color: #3159a8; }
+    .chevron { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .gear { display: block; width: 18px; height: 18px; }
+    .mode-menu { position: absolute; z-index: 2; top: calc(100% + 5px); left: 0; right: 0; padding: 4px; border: 1px solid #d4dce6; border-radius: 9px; background: white; box-shadow: 0 5px 14px #26375020; }
+    .mode-menu button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: #26364f; text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+    .mode-menu button:hover { background: #edf3fa; }
+    [hidden] { display: none !important; }
+    .settings { margin: -5px 0 16px; padding: 13px; border: 1px solid #dce2e7; border-radius: 10px; background: #fafbfd; }
+    .settings p { margin: 0 0 8px; color: #56647a; font-size: 12px; line-height: 1.4; }
+    .connection-state { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: #25344d; font-size: 13px; font-weight: 650; }
+    .settings .setting-title { color: #25344d; font-size: 13px; font-weight: 650; }
+    .settings label { display: block; margin: 12px 0 6px; color: #34445e; font-size: 12px; font-weight: 600; }
+    .settings input { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd3da; border-radius: 8px; background: white; color: #17212b; font: inherit; font-size: 12px; }
+    .settings-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+    .settings-actions button { min-height: 32px; padding: 6px 9px; border: 1px solid #d3dbe7; border-radius: 7px; background: white; color: #26364f; font: inherit; font-size: 11px; cursor: pointer; }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #2fa779; }
+    .email-mode { margin-top: 4px; }
+    .selection-mode { margin-top: 4px; }
+    .selection-mode label { display: block; margin: 0 2px 7px; color: #53616d; font-size: 12px; font-weight: 600; }
+    textarea { display: block; width: 100%; min-height: 126px; resize: vertical; padding: 11px 12px; border: 1px solid #cbd3da; border-radius: 9px; background: white; color: #17212b; font: inherit; font-size: 13px; line-height: 1.5; }
+    textarea:focus, input:focus { outline: 2px solid #1769aa55; border-color: #1769aa; }
+    .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .actions button { min-width: 0; min-height: 42px; padding: 8px 6px; border: 0; border-radius: 9px; background: #1769aa; color: white; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+    .actions .secondary { border: 1px solid #cbd3da; background: white; color: #17212b; }
+    .actions button:disabled { opacity: .45; cursor: default; }
+    .result { margin-top: 16px; padding: 14px; border: 1px solid #dce2e7; border-radius: 10px; color: #26364f; font-size: 13px; line-height: 1.55; }
+    .result h2 { margin: 0 0 8px; font-size: 13px; color: #53616d; }
+    .result-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .conversation { display: grid; gap: 9px; margin-top: 14px; }
+    .turn { max-width: 94%; padding: 9px 11px; border-radius: 10px; background: #f0f3f7; color: #26364f; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .turn.user { justify-self: end; background: #e9f2fb; }
+    .follow-up { margin-top: 16px; }
+    .follow-up textarea { min-height: 72px; }
+    .ask { display: block; min-height: 34px; margin: 8px 0 0 auto; padding: 7px 12px; border: 1px solid #cbd3da; border-radius: 8px; background: white; color: #26364f; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    @media (max-width: 340px) { .pane { padding: 13px; } .actions { gap: 7px; } .actions button { font-size: 12px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="preview-note">Interactive layout preview. The buttons show sample results only.</p>
+    <div class="preview-actions">
+      <button id="translation-demo" class="preview-toggle" type="button">Show translation chat</button>
+      <button id="reply-demo" class="preview-toggle" type="button">Show reply chat</button>
+    </div>
+    <section class="pane" aria-label="MailCue preview">
+      <div class="toolbar">
+        <div class="mode-wrap">
+          <button id="mode-button" class="top-button" type="button" aria-expanded="false" aria-controls="mode-menu">
+            <span id="mode-value" class="mode-value">Email</span>
+            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+          </button>
+          <div id="mode-menu" class="mode-menu" hidden>
+            <button type="button" data-mode="email">Email</button>
+            <button type="button" data-mode="selected">Selected text</button>
+          </div>
+        </div>
+        <button id="new-request" class="top-button" type="button" hidden>New request</button>
+        <button id="settings-button" class="top-button" type="button" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="settings">
+          <img class="gear" src="settings.svg" alt="">
+        </button>
+      </div>
+
+      <section id="settings" class="settings" hidden>
+        <div class="connection-state"><span class="status-dot" aria-hidden="true"></span><span>ChatGPT connected</span></div>
+        <p>you@example.com</p>
+        <label for="allowed-email">Outlook account</label>
+        <input id="allowed-email" type="email" value="you@example.com">
+        <div class="settings-actions">
+          <button type="button">Save</button>
+        </div>
+      </section>
+
+      <section id="email-mode" class="email-mode">
+        <div class="actions">
+          <button type="button" data-action="translate">Translate</button>
+          <button type="button" class="secondary" data-action="reply">Suggest Reply</button>
+        </div>
+      </section>
+
+      <section id="selection-mode" class="selection-mode" hidden>
+        <label for="selected-text">Selected text</label>
+        <textarea id="selected-text" placeholder="Paste selected text…"></textarea>
+        <div class="actions">
+          <button type="button" data-action="translate">Translate</button>
+          <button type="button" class="secondary" data-action="reply">Suggest Reply</button>
+        </div>
+      </section>
+
+      <section id="result" class="result" hidden>
+        <h2 id="result-title"></h2>
+        <div id="result-text" class="result-text"></div>
+        <div id="conversation" class="conversation"></div>
+        <div class="follow-up">
+          <textarea id="follow-up" placeholder="Ask or request a revision…"></textarea>
+          <button id="ask" class="ask" type="button">Ask</button>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script>
+    const modeButton = document.getElementById("mode-button");
+    const modeMenu = document.getElementById("mode-menu");
+    const settingsButton = document.getElementById("settings-button");
+    const settings = document.getElementById("settings");
+    const modeWrap = document.querySelector(".mode-wrap");
+    const newRequest = document.getElementById("new-request");
+    const emailMode = document.getElementById("email-mode");
+    const selectionMode = document.getElementById("selection-mode");
+    const selectedText = document.getElementById("selected-text");
+    const result = document.getElementById("result");
+    const conversation = document.getElementById("conversation");
+    const demoButtons = [document.getElementById("translation-demo"), document.getElementById("reply-demo")];
+    modeButton.addEventListener("click", () => {
+      const open = modeButton.getAttribute("aria-expanded") !== "true";
+      modeButton.setAttribute("aria-expanded", String(open));
+      modeMenu.hidden = !open;
+    });
+    modeMenu.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => {
+      const selected = button.dataset.mode === "selected";
+      document.getElementById("mode-value").textContent = selected ? "Selected text" : "Email";
+      emailMode.hidden = selected;
+      selectionMode.hidden = !selected;
+      modeMenu.hidden = true;
+      modeButton.setAttribute("aria-expanded", "false");
+      result.hidden = true;
+      updateActions();
+    }));
+    function updateActions() {
+      const needsText = document.getElementById("mode-value").textContent === "Selected text";
+      document.querySelectorAll("#selection-mode [data-action]").forEach((button) => {
+        button.disabled = needsText && !selectedText.value.trim();
+      });
+    }
+    selectedText.addEventListener("input", updateActions);
+    updateActions();
+    settingsButton.addEventListener("click", () => {
+      const open = settingsButton.getAttribute("aria-expanded") !== "true";
+      settingsButton.setAttribute("aria-expanded", String(open));
+      settings.hidden = !open;
+    });
+    document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => {
+      if (document.getElementById("mode-value").textContent === "Selected text" && !selectedText.value.trim()) return;
+      const translate = button.dataset.action === "translate";
+      document.getElementById("result-title").textContent = translate ? "繁體中文翻譯" : "Suggested reply";
+      document.getElementById("result-text").textContent = translate
+        ? "謝謝你跟進。這其實是我目前職位的續約，而不是另一份工作邀約。"
+        : "Thanks for clarifying. I understand, and I’ll check with the team and keep you updated.";
+      result.hidden = false;
+      modeWrap.hidden = true;
+      newRequest.hidden = false;
+      emailMode.hidden = true;
+      selectionMode.hidden = true;
+      conversation.replaceChildren();
+      document.getElementById("follow-up").value = "";
+    }));
+    document.getElementById("ask").addEventListener("click", () => {
+      const question = document.getElementById("follow-up").value.trim();
+      if (!question) return;
+      const userTurn = document.createElement("div");
+      userTurn.className = "turn user";
+      userTurn.textContent = question;
+      const assistantTurn = document.createElement("div");
+      assistantTurn.className = "turn";
+      assistantTurn.textContent = document.getElementById("result-title").textContent === "Suggested reply"
+        ? "Sure — here’s a warmer version: Thanks so much for clarifying! I understand now, and I’ll check with the team and keep you posted."
+        : "It means the current role or contract is being renewed, rather than a new job offer. I can also make the reply warmer or shorter.";
+      conversation.append(userTurn, assistantTurn);
+      document.getElementById("follow-up").value = "";
+    });
+    newRequest.addEventListener("click", () => {
+      modeWrap.hidden = false;
+      newRequest.hidden = true;
+      result.hidden = true;
+      conversation.replaceChildren();
+      document.getElementById("follow-up").value = "";
+      const selected = document.getElementById("mode-value").textContent === "Selected text";
+      emailMode.hidden = selected;
+      selectionMode.hidden = !selected;
+      demoButtons.forEach((button) => {
+        button.dataset.active = "false";
+        button.textContent = button.id === "reply-demo" ? "Show reply chat" : "Show translation chat";
+      });
+    });
+    function showDemo(button, title, initialText, turns) {
+      if (button.dataset.active === "true") {
+        newRequest.click();
+        return;
+      }
+      document.getElementById("result-title").textContent = title;
+      document.getElementById("result-text").textContent = initialText;
+      conversation.replaceChildren();
+      turns.forEach(([question, answer]) => {
+        const userTurn = document.createElement("div");
+        userTurn.className = "turn user";
+        userTurn.textContent = question;
+        const assistantTurn = document.createElement("div");
+        assistantTurn.className = "turn";
+        assistantTurn.textContent = answer;
+        conversation.append(userTurn, assistantTurn);
+      });
+      result.hidden = false;
+      modeWrap.hidden = true;
+      newRequest.hidden = false;
+      emailMode.hidden = true;
+      selectionMode.hidden = true;
+      document.getElementById("follow-up").value = "";
+      demoButtons.forEach((demoButton) => {
+        demoButton.dataset.active = String(demoButton === button);
+        demoButton.textContent = demoButton === button ? "Back to start" : (demoButton.id === "reply-demo" ? "Show reply chat" : "Show translation chat");
+      });
+    }
+    document.getElementById("translation-demo").addEventListener("click", (event) => showDemo(
+      event.currentTarget,
+      "繁體中文翻譯",
+      "謝謝你跟進。這其實是我目前職位的續約，而不是另一份工作邀約。",
+      [
+        ["這句話是什麼意思？", "意思是對方目前的職位或合約要續約，不是收到新的工作邀約。"],
+        ["那幫我把回覆寫得更親切一點。", "Thanks for clarifying! I understand now. I’ll check with the team and keep you posted."],
+      ]
+    ));
+    document.getElementById("reply-demo").addEventListener("click", (event) => showDemo(
+      event.currentTarget,
+      "Suggested reply",
+      "Thanks for clarifying. I understand, and I’ll check with the team and keep you updated.",
+      [
+        ["語氣可以親切一點嗎？", "Thanks so much for clarifying! I understand now, and I’ll check with the team and keep you posted."],
+        ["再短一點？", "Thanks for clarifying! I’ll check with the team and keep you posted."],
+      ]
+    ));
+  </script>
+</body>
+</html>

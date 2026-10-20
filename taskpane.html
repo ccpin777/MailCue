@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MailCue</title>
+    <link rel="stylesheet" href="/src/taskpane.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script defer src="/src/taskpane.js"></script>
+  </head>
+  <body>
+    <main>
+      <header class="toolbar">
+        <div id="mode-wrap" class="mode-wrap">
+          <button id="mode-button" class="toolbar-button mode-button" type="button" aria-expanded="false" aria-controls="mode-menu">
+            <span id="mode-value">Email</span>
+            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+          </button>
+          <div id="mode-menu" class="mode-menu" hidden>
+            <button type="button" data-mode="email">Email</button>
+            <button type="button" data-mode="selected">Selected text</button>
+          </div>
+        </div>
+        <button id="new-request" class="toolbar-button" type="button" hidden>New request</button>
+        <button id="settings-button" class="toolbar-button settings-button" type="button" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="settings-panel">
+          <img src="/assets/settings.svg" alt="" />
+        </button>
+      </header>
+
+      <section id="settings-panel" class="settings-panel" hidden>
+        <div class="connection-state"><span id="connection-dot" class="connection-dot" aria-hidden="true"></span><span id="connection-state">ChatGPT not connected</span></div>
+        <p id="connection-detail">Connect once to use your ChatGPT plan.</p>
+        <button id="connect" class="secondary" type="button">Connect ChatGPT</button>
+        <div class="account-setting">
+          <label class="input-label" for="allowed-email">Outlook account</label>
+          <p class="current-account">Current Outlook account: <span id="current-account">Checking…</span></p>
+          <div class="account-input-row">
+            <input id="allowed-email" type="email" autocomplete="email" placeholder="you@example.com" />
+            <button id="save-email" type="button" disabled>Save</button>
+          </div>
+        </div>
+        <div class="model-setting">
+          <label class="input-label" for="model-select">ChatGPT model</label>
+          <div class="model-input-row">
+            <select id="model-select" disabled><option value="">Open Settings to load models…</option></select>
+          </div>
+        </div>
+      </section>
+
+      <div id="input-area" hidden>
+        <label class="input-label" for="selected-text">Selected email text</label>
+        <textarea id="selected-text" rows="7" placeholder="Paste the email text here…" spellcheck="true"></textarea>
+      </div>
+
+      <section id="actions" class="actions" aria-label="Email actions" hidden>
+        <button id="translate" type="button" disabled>Translate</button>
+        <button id="suggest" class="secondary" type="button" disabled>Suggest Reply</button>
+      </section>
+
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="result-card" class="result-card" hidden>
+        <h2 id="result-title">Result</h2>
+        <div id="result" class="result" dir="auto"></div>
+        <div id="conversation" class="conversation" aria-live="polite"></div>
+        <div class="follow-up">
+          <textarea id="follow-up-question" rows="2" maxlength="5000" placeholder="Ask or request a revision…" aria-label="Ask a follow-up question" spellcheck="true"></textarea>
+          <button id="ask-follow-up" class="secondary" type="button" disabled>Ask</button>
+        </div>
+      </section>
+      <p class="privacy">MailCue sends the open email or pasted text to OpenAI only when you click. Replies are never sent automatically.</p>
+    </main>
+  </body>
+</html>

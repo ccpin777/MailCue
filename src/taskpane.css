@@ -1,0 +1,67 @@
+:root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f7f8fa; color: #17212b; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #f7f8fa; }
+main { max-width: 560px; margin: 0 auto; padding: 18px 16px 28px; }
+.toolbar { display: grid; grid-template-columns: 1fr 44px; gap: 9px; margin-bottom: 15px; }
+.mode-wrap { position: relative; min-width: 0; }
+.toolbar-button { display: flex; width: 100%; min-width: 0; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; border: 1px solid #d4dce6; border-radius: 9px; background: #fff; color: #26364f; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.toolbar-button:hover { background: #f7f9fc; }
+.mode-button { justify-content: space-between; }
+.mode-button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chevron { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.mode-menu { position: absolute; z-index: 2; top: calc(100% + 5px); left: 0; right: 0; padding: 4px; border: 1px solid #d4dce6; border-radius: 9px; background: white; box-shadow: 0 5px 14px #26375020; }
+.mode-menu button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: #26364f; text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+.mode-menu button:hover { background: #edf3fa; }
+.settings-button { width: 44px; padding: 0; }
+.settings-button img { display: block; width: 18px; height: 18px; }
+[hidden] { display: none !important; }
+.settings-panel { margin: -5px 0 16px; padding: 13px; border: 1px solid #dce2e7; border-radius: 10px; background: #fafbfd; }
+.settings-panel p { margin: 0 0 8px; color: #56647a; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.connection-state { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: #25344d; font-size: 13px; font-weight: 650; }
+.connection-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #d64545; }
+.connection-dot.is-connected { background: #2fa779; }
+.settings-panel > button { min-height: 34px; padding: 7px 10px; font-size: 12px; }
+.current-account { color: #65717c !important; font-size: 11px !important; }
+.account-setting { display: grid; gap: 7px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e1e5e9; }
+.account-input-row { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.account-setting input { flex: 1 1 auto; width: 0; min-width: 0; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd3da; border-radius: 8px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+.account-setting #save-email { flex: 0 0 auto; min-height: 36px; padding: 7px 12px; font-size: 12px; }
+.model-setting { display: grid; gap: 7px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e1e5e9; }
+.model-input-row select { width: 100%; min-width: 0; min-height: 36px; padding: 7px 9px; border: 1px solid #cbd3da; border-radius: 8px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+.input-label { display: block; margin: 0 2px 7px; color: #53616d; font-size: 12px; font-weight: 600; }
+textarea { display: block; width: 100%; min-height: 126px; resize: vertical; padding: 11px 12px; border: 1px solid #cbd3da; border-radius: 9px; background: #fff; color: #17212b; font: inherit; font-size: 13px; line-height: 1.5; }
+textarea:focus, input:focus { outline: 2px solid #1769aa55; border-color: #1769aa; }
+#input-area { margin-bottom: 12px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+button { min-height: 42px; padding: 10px 14px; border: 0; border-radius: 9px; background: #1769aa; color: #fff; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+button.secondary { border: 1px solid #cbd3da; background: #fff; color: #17212b; }
+button:disabled { opacity: .48; cursor: default; }
+#status { min-height: 20px; margin: 14px 2px; color: #53616d; font-size: 13px; line-height: 1.5; }
+#status:empty { display: none; }
+#status.error { color: #a52727; }
+.result-card { padding: 15px; border: 1px solid #dce2e7; border-radius: 12px; background: #fff; }
+.result-card h2 { margin: 0 0 10px; font-size: 14px; }
+.result { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.6; }
+.conversation { display: grid; gap: 9px; margin-top: 14px; }
+.chat-turn { padding: 10px 11px; border-radius: 9px; background: #f0f3f7; }
+.chat-turn.from-user { background: #e9f2fb; }
+.chat-turn strong { display: block; margin-bottom: 4px; font-size: 11px; }
+.chat-turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+.follow-up { display: grid; gap: 8px; margin-top: 16px; }
+.follow-up button { justify-self: end; min-height: 36px; padding: 8px 13px; font-size: 12px; }
+.privacy { margin: 16px 2px 0; color: #64717c; font-size: 11px; line-height: 1.5; }
+@media (max-width: 340px) { main { padding: 14px 12px 22px; } .actions { gap: 7px; } .actions button { padding-inline: 6px; font-size: 12px; } }
+@media (prefers-color-scheme: dark) {
+  :root, body { background: #1f2329; color: #f2f4f7; }
+  .settings-panel p, .input-label, #status, .privacy { color: #bbc3cb; }
+  .settings-panel, .result-card, .toolbar-button, .mode-menu, button.secondary { border-color: #424b55; background: #292f36; color: #f2f4f7; }
+  .mode-menu button { color: #f2f4f7; }
+  .mode-menu button:hover { background: #343b44; }
+  .account-setting { border-color: #424b55; }
+  .account-setting input { border-color: #424b55; background: #292f36; color: #f2f4f7; }
+  .model-setting { border-color: #424b55; }
+  .model-input-row select { border-color: #424b55; background: #292f36; color: #f2f4f7; }
+  textarea { border-color: #424b55; background: #292f36; color: #f2f4f7; }
+  .chat-turn { background: #343b44; }
+  .chat-turn.from-user { background: #26394c; }
+}

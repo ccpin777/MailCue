@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MailCue Connection States</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #192438; background: #eef2f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px 18px; }
+    main { max-width: 850px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .brand img { width: 38px; height: 38px; object-fit: contain; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    .intro { margin: 0 0 22px; color: #637086; font-size: 14px; }
+    .states { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 18px; }
+    .frame { padding: 14px; border-radius: 12px; background: #dce3ed; }
+    .state-title { margin: 0 0 9px 2px; color: #56647a; font-size: 13px; font-weight: 600; }
+    .pane { min-height: 280px; padding: 20px; border-radius: 9px; background: white; box-shadow: 0 3px 12px #26375018; }
+    .mailbox { margin: 0 0 14px; color: #65738a; font-size: 12px; overflow-wrap: anywhere; }
+    .mailbox strong { color: #34445e; font-weight: 600; }
+    .connect-card { padding: 0; margin-bottom: 16px; border: 1px solid #dce2e7; border-radius: 12px; background: #fff; }
+    .connection-toggle { display: flex; width: 100%; align-items: center; gap: 9px; min-height: 46px; padding: 11px 13px; border: 0; border-radius: 12px; background: transparent; color: #192438; text-align: left; cursor: pointer; }
+    .dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #d64545; }
+    .connected .dot { background: #2fa779; }
+    .chevron { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease; }
+    .connection-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+    .details { padding: 0 13px 13px 31px; }
+    .details p { margin: 0 0 10px; color: #65738a; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+    .details button { min-height: 36px; padding: 8px 11px; border: 1px solid #d3dbe7; border-radius: 8px; background: white; color: #26364f; font-size: 12px; font-weight: 600; }
+    .details button[hidden] { display: none; }
+    .connection-state { font-weight: 650; }
+    .current-account { color: #65717c; font-size: 11px !important; }
+    .account-setting { display: grid; gap: 7px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e1e5e9; }
+    .account-setting input { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd3da; border-radius: 8px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+    .account-setting button { justify-self: start; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .input-label { display: block; margin: 0 2px 7px; color: #53616d; font-size: 12px; font-weight: 600; }
+    textarea { display: block; width: 100%; min-height: 100px; resize: vertical; padding: 11px 12px; border: 1px solid #cbd3da; border-radius: 9px; background: #fff; color: #17212b; font: inherit; font-size: 13px; line-height: 1.5; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    button { min-height: 42px; padding: 8px 10px; border: 0; border-radius: 8px; background: #3159a8; color: white; font-size: 13px; font-weight: 600; }
+    .secondary { border: 1px solid #d3dbe7; background: white; color: #26364f; }
+    .result { min-height: 90px; margin-top: 18px; padding: 14px; border: 1px solid #e2e7ee; border-radius: 9px; color: #637086; font-size: 13px; line-height: 1.5; }
+    .result strong { display: block; margin-bottom: 7px; color: #25344d; }
+    .conversation { display: grid; gap: 9px; margin-top: 14px; }
+    .chat-turn { padding: 10px 11px; border-radius: 9px; background: #f0f3f7; }
+    .chat-turn.from-user { background: #e9f2fb; }
+    .chat-turn strong { display: block; margin-bottom: 4px; font-size: 11px; }
+    .chat-turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+    .follow-up { display: grid; gap: 8px; margin-top: 16px; }
+    .follow-up button { justify-self: end; min-height: 36px; padding: 8px 13px; border: 1px solid #d3dbe7; border-radius: 8px; background: white; color: #26364f; font-size: 12px; font-weight: 600; }
+    @media (max-width: 620px) { .states { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="brand">
+      <img src="ai_discuss_icon_thin.svg" alt="MailCue icon">
+      <h1>MailCue — Connection States</h1>
+    </header>
+    <p class="intro">Paste only the email text you want to translate or reply to. You can ask follow-up questions about the result.</p>
+    <div class="states">
+      <section class="frame">
+        <h2 class="state-title">Connected</h2>
+        <div class="pane connected">
+          <div class="mailbox">Outlook: <strong>you@example.com</strong></div>
+          <section class="connect-card">
+            <button class="connection-toggle" type="button" aria-label="Show ChatGPT and Outlook account details" aria-expanded="false" aria-controls="connected-details">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="sr-only">ChatGPT connected</span>
+              <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+            </button>
+            <div id="connected-details" class="details" hidden>
+              <p class="connection-state">ChatGPT connected</p>
+              <p>Connected as you@example.com</p>
+              <div class="account-setting">
+                <label class="input-label" for="allowed-email-preview">Outlook account MailCue can use</label>
+                <p class="current-account">Current Outlook account: you@example.com</p>
+                <input id="allowed-email-preview" type="email" value="you@example.com">
+                <button type="button">Use current account</button>
+                <button type="button">Save account</button>
+              </div>
+            </div>
+          </section>
+          <label class="input-label" for="selected-text">Selected email text</label>
+          <textarea id="selected-text" rows="4" placeholder="Copy text from the email, then paste it here.">Could you send me the revised proposal by Friday?</textarea>
+          <div class="actions">
+            <button type="button">Translate</button>
+            <button type="button" class="secondary">Suggest Reply</button>
+          </div>
+          <div class="result">
+            <strong>繁體中文翻譯</strong>你可以在星期五前把修改後的提案寄給我嗎？
+            <div class="conversation">
+              <div class="chat-turn from-user"><strong>You</strong><p>“revised proposal” 是什麼意思？</p></div>
+              <div class="chat-turn"><strong>MailCue</strong><p>指「修改後的提案」或「修訂版提案」。</p></div>
+            </div>
+            <div class="follow-up">
+              <label class="input-label" for="follow-up-question">Ask about this result</label>
+              <textarea id="follow-up-question" rows="2" placeholder="Ask for an explanation or a revision."></textarea>
+              <button type="button">Ask</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="frame">
+        <h2 class="state-title">Not connected</h2>
+        <div class="pane">
+          <div class="mailbox">Outlook: <strong>you@example.com</strong></div>
+          <section class="connect-card">
+            <button class="connection-toggle" type="button" aria-label="Show ChatGPT and Outlook account details" aria-expanded="false" aria-controls="disconnected-details">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="sr-only">ChatGPT not connected</span>
+              <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+            </button>
+            <div id="disconnected-details" class="details" hidden>
+              <p class="connection-state">ChatGPT not connected</p>
+              <p>Connect once to use your ChatGPT plan.</p>
+              <button type="button">Connect ChatGPT</button>
+              <div class="account-setting">
+                <label class="input-label" for="allowed-email-preview-2">Outlook account MailCue can use</label>
+                <p class="current-account">Current Outlook account: you@example.com</p>
+                <input id="allowed-email-preview-2" type="email" value="you@example.com">
+                <button type="button">Use current account</button>
+                <button type="button">Save account</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    document.querySelectorAll(".connection-toggle").forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        const expanded = toggle.getAttribute("aria-expanded") === "true";
+        toggle.setAttribute("aria-expanded", String(!expanded));
+        document.getElementById(toggle.getAttribute("aria-controls")).hidden = expanded;
+      });
+    });
+  </script>
+</body>
+</html>
