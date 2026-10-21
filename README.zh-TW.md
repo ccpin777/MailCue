@@ -54,15 +54,17 @@ MailCue 是我透過 vibe coding 做出的個人實驗，想探索如何把 Chat
 
    將 `~/Library/Application Support/MailCue/certs/localhost.pem` 信任到 macOS 目前使用者的登入 Keychain，然後重新啟動 Outlook。憑證包含 `localhost` 和 `127.0.0.1`。
 
-5. 建置選單列 App：在 Mac 上執行 `commands/build-menubar-app.command`，產生 `dist/MailCue.app`。若要先測試選單列控制器，可先結束已開啟的 MailCue App，再雙擊 `Run.command`；它會以前景方式執行並保留 Terminal 錯誤訊息。目前建置指令依賴上述共用 Python 環境；在其他位置全新 clone 的使用者，必須先自行準備建置環境，不能直接一鍵建置。成功建置後會刪除暫存的 `build/`、`build-logs/` 和 `dist/MailCue/`，保留 `dist/MailCue.app`。
+5. 建置選單列 App：在 Mac 上執行 `commands/build-menubar-app.command`，產生 `dist/MailCue.app`。若要先測試選單列控制器，可先結束已開啟的 MailCue App，再雙擊根目錄的 `Run.command`；它會以前景方式執行並保留 Terminal 錯誤訊息。目前建置指令依賴上述共用 Python 環境；在其他位置全新 clone 的使用者，必須先自行準備建置環境，不能直接一鍵建置。成功建置後會刪除暫存的 `build/`、`build-logs/` 和 `dist/MailCue/`，保留 `dist/MailCue.app`。
 
-6. 在 Outlook for Mac 使用 **Tools → Get Add-ins → My Add-ins → Add a custom add-in → Add from File**，選取專案中的 `manifest.xml`。
+6. 在 Outlook for Mac 使用 **Tools → Get Add-ins → My Add-ins → Add a custom add-in → Add from File**，選取專案中的 `manifest.xml`。Microsoft 官方說明請見[Outlook sideloading 備註](docs/outlook-sideloading.md)。
 
 7. 從 macOS 選單列啟動 MailCue。於 Outlook 開啟郵件並開啟 **MailCue** 側邊欄，在 **Settings** 選 **Connect ChatGPT**，於瀏覽器登入並授權方案用量。OAuth 登入資料會存放在 `~/Library/Application Support/MailCue/Private`，權限僅限目前使用者。
 
    若舊版資料仍在 `~/Library/Application Support/Outlook Assistant`，請先結束 MailCue，再將資料搬到 `~/Library/Application Support/MailCue`。若目的地資料夾已存在，先備份兩邊，再小心合併；不要直接覆蓋。
 
 8. 開啟 **Settings**，選擇 ChatGPT 模型。首次使用會採用清單中的第一個模型；改選其他模型後會立即儲存並套用。
+
+若要改用 API，在 **Settings → Connection method** 選擇 **OpenAI API key**，輸入 API key 並按 **Save**。MailCue 會先驗證金鑰並載入可用模型，通過後才將金鑰存到 `~/Library/Application Support/MailCue/Private/openai-api-key`（僅目前使用者可讀）。之後可在 **Model** 選擇 API 模型。API 用量會依 OpenAI API 帳戶另行計費，與 ChatGPT 訂閱分開；切回 **ChatGPT sign-in** 可繼續使用已連線的 ChatGPT 帳號。
 
 ## 日常使用
 
@@ -82,7 +84,7 @@ MailCue 是我透過 vibe coding 做出的個人實驗，想探索如何把 Chat
 - **Launch at Login**：設定 MailCue 選單列 App 在下次登入 macOS 時自動啟動。啟用後不要移動 `dist/MailCue.app`。
 - **Quit MailCue**：停止服務並結束選單列 App。
 
-變更程式碼後，需在 Mac 上重建並重新啟動 `dist/MailCue.app`。只要 Add-in 的 manifest URL 沒有變更，通常不用重新安裝 Outlook Add-in。選單列 App 和 `npm_start.command` 都會使用本機連接埠 1455、1456，不要同時執行。
+變更程式碼後，需在 Mac 上重建並重新啟動 `dist/MailCue.app`。只要 Add-in 的 manifest URL 沒有變更，通常不用重新安裝 Outlook Add-in。選單列 App 和 `commands/npm_start.command` 都會使用本機連接埠 1455、1456，不要同時執行。
 
 ## 本機網址
 
@@ -102,9 +104,9 @@ Bridge 只綁定 loopback，不會在區域網路上開啟服務。
 ## 限制與注意事項
 
 - MailCue 使用官方文件所述的公開 Responses API 和 ChatGPT 方案 OAuth token，不使用 API key 或非公開 Codex endpoint。
-- OpenAI 的預覽功能、帳號資格、模型清單和使用限制可能變動，需以你的 ChatGPT 帳號實際授權結果為準。
+- ChatGPT 方案連線的模型清單和使用限制依帳號授權而定；API 模型清單則依 API 專案權限而定。API 用量另行計費。
 - MailCue 會檢查設定的 Outlook 帳號，並透過每次執行產生的 token 和 Origin 驗證保護 localhost API。這可防範一般跨來源呼叫，但無法對同一台 Mac、同一個使用者身分下的惡意程式提供嚴格信箱隔離。更嚴格的隔離需要驗證 Outlook 身分 token 和 Microsoft 應用程式註冊。
 - 模型選擇器顯示目前帳號可見的模型；清單上的模型仍可能不接受 Responses 請求。遇到錯誤時，請在 Settings 改選其他模型。
 - OAuth、模型清單、Responses 串流和 Outlook 郵件讀取都有逾時限制。若操作停滯，MailCue 會顯示錯誤而不是一直保持忙碌。
-- Outlook Add-in 的內容頁面使用 localhost，因此使用時 Bridge 必須執行。選單列 App 會啟停 Bridge；`npm_start.command` 可作為手動替代方式。
+- Outlook Add-in 的內容頁面使用 localhost，因此使用時 Bridge 必須執行。選單列 App 會啟停 Bridge；`commands/npm_start.command` 可作為手動替代方式。
 - 不要將 `config.json`、憑證或 OAuth 登入資料 commit 到 Git。

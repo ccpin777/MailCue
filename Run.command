@@ -1,8 +1,8 @@
 #!/bin/bash
 set -uo pipefail
 
-DIR="$(cd "$(dirname "$0")" && pwd)"
-WORKSPACE_DIR="$(cd "$DIR/../.." && pwd)"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKSPACE_DIR="$(cd "$PROJECT_DIR/../.." && pwd)"
 PYTHON="$WORKSPACE_DIR/venv/bin/python"
 
 # Match Coding Deck's clean Qt/PySide launch environment.
@@ -29,7 +29,7 @@ fi
 echo "Starting MailCue directly from source (no app build)."
 echo "Keep this Terminal window open while testing."
 echo
-"$PYTHON" "$DIR/native/mailcue_menubar.py"
+"$PYTHON" "$PROJECT_DIR/native/mailcue_menubar.py"
 run_status=$?
 
 echo

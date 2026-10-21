@@ -1,7 +1,7 @@
 /* global Office */
 const byId = (id) => document.getElementById(id);
 const DEFAULT_TRANSLATION_LANGUAGE = "Traditional Chinese (Taiwan)";
-const state = { mailbox: "", allowed: false, connected: false, connecting: false, busy: false, modelsLoaded: false, mode: "email", conversationActive: false, context: null, thread: [], translationLanguage: DEFAULT_TRANSLATION_LANGUAGE };
+const state = { mailbox: "", allowed: false, connected: false, connecting: false, busy: false, followupController: null, modelsLoaded: false, provider: "chatgpt", apiKeyConfigured: false, mode: "email", conversationActive: false, context: null, thread: [], translationLanguage: DEFAULT_TRANSLATION_LANGUAGE };
 
 function setStatus(message, isError = false) {
   const node = byId("status");
@@ -33,8 +33,11 @@ async function request(path, body) {
   }
 }
 
-async function requestStream(path, body, onDelta) {
+async function requestStream(path, body, onDelta, externalSignal = null) {
   const controller = new AbortController();
+  const abortFromExternal = () => controller.abort();
+  if (externalSignal?.aborted) abortFromExternal();
+  else externalSignal?.addEventListener("abort", abortFromExternal, { once: true });
   const timer = window.setTimeout(() => controller.abort(), 240000);
   let reader;
   try {
@@ -87,10 +90,12 @@ async function requestStream(path, body, onDelta) {
     if (!completed) throw new Error("The response stream ended before completion.");
     return { text };
   } catch (error) {
+    if (externalSignal?.aborted) throw new Error("Response stopped.");
     if (controller.signal.aborted) throw new Error("MailCue did not respond in time. Check the menu bar service and try again.");
     throw error;
   } finally {
     window.clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", abortFromExternal);
     if (reader) await reader.cancel().catch(() => {});
   }
 }
@@ -140,7 +145,14 @@ function refreshButtons() {
   const enabled = state.allowed && state.connected && !state.busy && hasInput;
   byId("translate").disabled = !enabled;
   byId("suggest").disabled = !enabled;
-  byId("ask-follow-up").disabled = state.busy || !state.context || !byId("follow-up-question").value.trim();
+  const askButton = byId("ask-follow-up");
+  const responseIsStreaming = Boolean(state.followupController);
+  askButton.disabled = responseIsStreaming ? false : state.busy || !state.context || !byId("follow-up-question").value.trim();
+  askButton.classList.toggle("is-stopping", responseIsStreaming);
+  byId("ask-follow-up-label").hidden = responseIsStreaming;
+  byId("stop-response-icon").hidden = !responseIsStreaming;
+  askButton.setAttribute("aria-label", responseIsStreaming ? "Stop response" : "Ask");
+  askButton.title = responseIsStreaming ? "Stop response" : "Ask";
   byId("new-request").disabled = state.busy;
   byId("mode-button").disabled = state.busy;
   byId("selected-text").disabled = state.busy;
@@ -148,14 +160,83 @@ function refreshButtons() {
   byId("mode-menu").querySelectorAll("button").forEach((button) => { button.disabled = state.busy; });
   byId("actions").hidden = !(state.allowed && state.connected) || state.conversationActive;
   byId("input-area").hidden = !(state.allowed && state.connected && state.mode === "selected") || state.conversationActive;
-  byId("connect").hidden = state.connected;
+  byId("connect").hidden = state.provider !== "chatgpt" || state.connected;
   byId("connect").disabled = state.connecting || state.busy;
-  const connectionText = state.connected ? "ChatGPT connected" : "ChatGPT not connected";
+  byId("chatgpt-connection").hidden = state.provider !== "chatgpt";
+  byId("api-connection").hidden = state.provider !== "api";
+  byId("provider-select").disabled = state.busy || state.connecting;
+  byId("api-key").disabled = state.busy;
+  byId("save-api-key").disabled = state.busy || !byId("api-key").value.trim();
+  const connectionText = state.provider === "api"
+    ? (state.connected ? "OpenAI API connected" : "OpenAI API not connected")
+    : (state.connected ? "ChatGPT connected" : "ChatGPT not connected");
   byId("connection-state").textContent = connectionText;
   byId("connection-dot").classList.toggle("is-connected", state.connected);
   byId("save-email").disabled = state.busy || !isEmail(byId("allowed-email").value.trim());
   byId("translation-language").disabled = state.busy;
   byId("save-language").disabled = state.busy || !byId("translation-language").value.trim();
+}
+
+function showConnectionDetails(email = "") {
+  byId("connection-detail").textContent = state.provider === "api"
+    ? (state.connected ? "API key is stored in MailCue's private folder on this Mac. API usage is billed separately." : "Save an OpenAI API key to connect.")
+    : (state.connected ? (email || "Plan usage is authorized on this Mac.") : "Connect once to use your ChatGPT plan.");
+  byId("api-key-help").textContent = state.apiKeyConfigured
+    ? "A key is stored on this Mac. Enter a new key to replace it. API usage is billed separately from a ChatGPT plan."
+    : "Stored on this Mac. API usage is billed separately from a ChatGPT plan.";
+}
+
+async function selectProvider(provider) {
+  if (provider === "api" && !state.apiKeyConfigured) {
+    state.provider = "api";
+    state.connected = false;
+    state.modelsLoaded = false;
+    showConnectionDetails();
+    refreshButtons();
+    return;
+  }
+  try {
+    const result = await request("/api/provider", { provider });
+    state.provider = result.provider;
+    const session = await request("/api/session");
+    state.connected = session.connected;
+    state.modelsLoaded = false;
+    showConnectionDetails(session.email);
+    setStatus(state.connected ? "Connection method updated." : (session.error || "Open Settings to connect the selected service."), Boolean(session.error));
+    refreshButtons();
+    if (state.connected) loadModels();
+  } catch (error) {
+    byId("provider-select").value = state.provider;
+    setStatus(error.message, true);
+  }
+}
+
+async function saveApiKey() {
+  const apiKey = byId("api-key").value.trim();
+  if (!apiKey) return;
+  state.busy = true;
+  refreshButtons();
+  setStatus("Checking the API key and available models…");
+  try {
+    await request("/api/api-key", { apiKey });
+    byId("api-key").value = "";
+    state.apiKeyConfigured = true;
+    const selected = await request("/api/provider", { provider: "api" });
+    state.provider = selected.provider;
+    byId("provider-select").value = state.provider;
+    const session = await request("/api/session");
+    state.connected = session.connected;
+    state.modelsLoaded = false;
+    showConnectionDetails();
+    setStatus("OpenAI API key saved and verified.");
+    refreshButtons();
+    if (state.connected) loadModels();
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    state.busy = false;
+    refreshButtons();
+  }
 }
 
 function isEmail(value) {
@@ -283,18 +364,23 @@ function renderConversation() {
   for (const turn of state.thread) {
     const entry = document.createElement("div");
     entry.className = `chat-turn ${turn.role === "user" ? "from-user" : "from-assistant"}`;
-    const label = document.createElement("strong");
-    label.textContent = turn.role === "user" ? "You" : turn.incomplete ? "MailCue (incomplete)" : "MailCue";
     const text = document.createElement("p");
     text.textContent = turn.content;
-    entry.append(label, text);
+    if (turn.role !== "user") {
+      const label = document.createElement("strong");
+      label.textContent = turn.stopped ? "MailCue (stopped)" : turn.incomplete ? "MailCue (incomplete)" : "MailCue";
+      entry.append(label);
+    }
+    entry.append(text);
     list.append(entry);
   }
 }
 
 async function askFollowUp() {
   const question = byId("follow-up-question").value.trim();
-  if (!state.context || !question) return;
+  if (!state.context || !question || state.busy) return;
+  const controller = new AbortController();
+  state.followupController = controller;
   state.busy = true;
   refreshButtons();
   const history = state.thread.slice(-8).map((turn) => ({ ...turn, content: turn.content.slice(0, 3000) }));
@@ -315,16 +401,21 @@ async function askFollowUp() {
     }, (delta) => {
       assistantTurn.content += delta;
       streamingText.textContent = assistantTurn.content;
-    });
+    }, controller.signal);
     assistantTurn.content = result.text;
     renderConversation();
     setStatus("");
   } catch (error) {
-    if (assistantTurn.content) assistantTurn.incomplete = true;
+    const stopped = controller.signal.aborted;
+    if (assistantTurn.content) {
+      assistantTurn.incomplete = true;
+      assistantTurn.stopped = stopped;
+    }
     else state.thread.pop();
     renderConversation();
-    setStatus(error.message, true);
+    setStatus(stopped ? "Response stopped." : error.message, !stopped);
   } finally {
+    if (state.followupController === controller) state.followupController = null;
     state.busy = false;
     refreshButtons();
   }
@@ -410,20 +501,23 @@ async function initialize() {
       byId("allowed-email").value = allowedEmail;
       state.translationLanguage = String(config.translationLanguage || DEFAULT_TRANSLATION_LANGUAGE);
       byId("translation-language").value = state.translationLanguage;
+      state.provider = config.provider === "api" ? "api" : "chatgpt";
+      state.apiKeyConfigured = Boolean(config.apiKeyConfigured);
+      byId("provider-select").value = state.provider;
       state.allowed = Boolean(state.mailbox && allowedEmail && state.mailbox === allowedEmail);
       state.connected = session.connected;
+      showConnectionDetails(session.email);
       if (!config.allowedOutlookEmail) {
         setStatus("Open Settings to choose the Outlook account MailCue can use.", true);
       } else if (!state.allowed) {
         setStatus("This mailbox is not enabled. The assistant is restricted to the configured Outlook account.", true);
       } else if (session.connected) {
-        byId("connection-detail").textContent = session.email || "Plan usage is authorized on this Mac.";
         setStatus("");
       } else {
-        setStatus(session.error || "Open Settings to connect ChatGPT.", Boolean(session.error));
+        setStatus(session.error || (state.provider === "api" ? "Open Settings to add an OpenAI API key." : "Open Settings to connect ChatGPT."), Boolean(session.error));
       }
     } catch (error) {
-      setStatus(`Cannot reach the local bridge: ${error.message}`, true);
+      setStatus(`Could not load MailCue settings: ${error.message}`, true);
     }
     refreshButtons();
   });
@@ -432,6 +526,9 @@ async function initialize() {
 byId("translate").addEventListener("click", () => runAction("translate"));
 byId("suggest").addEventListener("click", () => runAction("suggest"));
 byId("connect").addEventListener("click", connect);
+byId("provider-select").addEventListener("change", (event) => selectProvider(event.target.value));
+byId("api-key").addEventListener("input", refreshButtons);
+byId("save-api-key").addEventListener("click", saveApiKey);
 byId("allowed-email").addEventListener("input", refreshButtons);
 byId("save-email").addEventListener("click", saveAllowedEmail);
 byId("translation-language").addEventListener("input", refreshButtons);
@@ -444,18 +541,30 @@ byId("follow-up-question").addEventListener("keydown", (event) => {
     if (!byId("ask-follow-up").disabled) askFollowUp();
   }
 });
-byId("ask-follow-up").addEventListener("click", askFollowUp);
+byId("ask-follow-up").addEventListener("click", () => {
+  if (state.followupController) {
+    state.followupController.abort();
+    return;
+  }
+  askFollowUp();
+});
+function closeModeMenu() {
+  byId("mode-menu").hidden = true;
+  byId("mode-button").setAttribute("aria-expanded", "false");
+}
 byId("mode-button").addEventListener("click", () => {
   const button = byId("mode-button");
   const open = button.getAttribute("aria-expanded") !== "true";
   button.setAttribute("aria-expanded", String(open));
   byId("mode-menu").hidden = !open;
 });
+document.addEventListener("pointerdown", (event) => {
+  if (!byId("mode-wrap").contains(event.target)) closeModeMenu();
+});
 byId("mode-menu").querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => {
   state.mode = button.dataset.mode;
   byId("mode-value").textContent = state.mode === "selected" ? "Selected text" : "Email";
-  byId("mode-menu").hidden = true;
-  byId("mode-button").setAttribute("aria-expanded", "false");
+  closeModeMenu();
   byId("result-card").hidden = true;
   setStatus("");
   refreshButtons();

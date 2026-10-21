@@ -8,7 +8,21 @@ PYTHON="$VENV/bin/python"
 DIST_DIR="$PROJECT_DIR/dist"
 LOG_DIR="$PROJECT_DIR/build-logs"
 mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/build-menubar-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="$LOG_DIR/build-menubar-$(date +%Y%m%d-%H%M%S)-$$.log"
+# Keep this attempt and the two most recent previous build logs (success or failure).
+: >> "$LOG_FILE"
+(
+  retention_dir=$(dirname -- "$LOG_FILE")
+  command ls -1t "$retention_dir"/build-*.log | while IFS= read -r older_log; do
+    [ "$older_log" != "$LOG_FILE" ] || continue
+    [ -f "$older_log" ] && [ ! -L "$older_log" ] || continue
+    retained_logs=${retained_logs:-1}
+    retained_logs=$((retained_logs + 1))
+    if [ "$retained_logs" -gt 3 ]; then
+      rm -f -- "$older_log" || printf 'Warning: could not remove old build log: %s\n' "$older_log" >&2
+    fi
+  done
+) || printf 'Warning: build log retention could not be completed.\n' >&2
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -82,6 +96,6 @@ echo "Built MailCue menu bar app: $DIST_DIR/MailCue.app"
 echo "Starting it now. Choose Launch at Login from its menu to start it with macOS."
 open -n "$DIST_DIR/MailCue.app"
 echo "Cleaning temporary build files..."
-rm -rf "$PROJECT_DIR/build" "$DIST_DIR/MailCue" "$LOG_DIR"
-echo "Removed build/, build-logs/, and dist/MailCue/. Kept dist/MailCue.app."
+rm -rf "$PROJECT_DIR/build" "$DIST_DIR/MailCue"
+echo "Removed build/ and dist/MailCue/. Kept dist/MailCue.app and the latest 3 build logs."
 read -r "REPLY?Press Enter to close..."

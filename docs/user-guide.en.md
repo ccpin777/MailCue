@@ -44,7 +44,7 @@ Settings and sign-in data are stored in `~/Library/Application Support/MailCue`.
 - **Launch at Login** starts the menu bar app automatically when you next log in to macOS. Keep `MailCue.app` at the same location after enabling this option.
 - **Quit MailCue** stops the service and exits the menu bar app.
 
-You can start the service manually with `npm_start.command`. Do not run it at the same time as **Turn On** in the menu bar app; both use the same local ports.
+You can start the service manually with `commands/npm_start.command`. Do not run it at the same time as **Turn On** in the menu bar app; both use the same local ports.
 
 ## After changing the source code
 
@@ -54,6 +54,6 @@ Rebuild `dist/MailCue.app` on your Mac with `commands/build-menubar-app.command`
 
 - **The task pane cannot load**: Make sure MailCue is running from the menu bar and the menu shows **Turn Off**. If the service is stopped, choose **Turn On**.
 - **This mailbox is not enabled**: In Settings, set **Outlook account** to the account currently open in Outlook and click **Save**.
-- **Address already in use**: Make sure the menu bar app and `npm_start.command` are not running at the same time.
+- **Address already in use**: Make sure the menu bar app and `commands/npm_start.command` are not running at the same time.
 - **The translation language did not change**: Click **Save** in Settings, then start a new Translate request.
 - **A model returns an error**: Select another available model in Settings and retry.

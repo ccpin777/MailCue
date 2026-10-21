@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")/.." || exit 1
 
 echo "Removing any obsolete Bridge login item..."
 sh scripts/uninstall-login-item.sh

@@ -28,9 +28,26 @@
       </header>
 
       <section id="settings-panel" class="settings-panel" hidden>
-        <div class="connection-state"><span id="connection-dot" class="connection-dot" aria-hidden="true"></span><span id="connection-state">ChatGPT not connected</span></div>
-        <p id="connection-detail">Connect once to use your ChatGPT plan.</p>
-        <button id="connect" class="secondary" type="button">Connect ChatGPT</button>
+        <div class="connection-state"><span id="connection-dot" class="connection-dot" aria-hidden="true"></span><span id="connection-state">AI service not connected</span></div>
+        <p id="connection-detail">Choose a connection method to use MailCue.</p>
+        <div class="provider-setting">
+          <label class="input-label" for="provider-select">Connection method</label>
+          <select id="provider-select">
+            <option value="chatgpt">ChatGPT sign-in</option>
+            <option value="api">OpenAI API key</option>
+          </select>
+        </div>
+        <div id="chatgpt-connection">
+          <button id="connect" class="secondary" type="button">Connect ChatGPT</button>
+        </div>
+        <div id="api-connection" hidden>
+          <label class="input-label" for="api-key">OpenAI API key</label>
+          <div class="api-key-row">
+            <input id="api-key" type="password" autocomplete="off" placeholder="sk-…" />
+            <button id="save-api-key" type="button">Save</button>
+          </div>
+          <p id="api-key-help" class="api-key-help">Stored on this Mac. API usage is billed separately from a ChatGPT plan.</p>
+        </div>
         <div class="account-setting">
           <label class="input-label" for="allowed-email">Outlook account</label>
           <p class="current-account">Current Outlook account: <span id="current-account">Checking…</span></p>
@@ -40,7 +57,7 @@
           </div>
         </div>
         <div class="model-setting">
-          <label class="input-label" for="model-select">ChatGPT model</label>
+          <label class="input-label" for="model-select">Model</label>
           <div class="model-input-row">
             <select id="model-select" disabled><option value="">Open Settings to load models…</option></select>
           </div>
@@ -87,7 +104,10 @@
         <div id="conversation" class="conversation" aria-live="polite"></div>
         <div class="follow-up">
           <textarea id="follow-up-question" rows="2" maxlength="5000" placeholder="Ask or request a revision…" aria-label="Ask a follow-up question" spellcheck="true"></textarea>
-          <button id="ask-follow-up" class="secondary" type="button" disabled>Ask</button>
+          <button id="ask-follow-up" class="secondary" type="button" aria-label="Ask" title="Ask" disabled>
+            <span id="ask-follow-up-label">Ask</span>
+            <svg id="stop-response-icon" class="stop-response-icon" viewBox="0 0 16 16" aria-hidden="true" hidden><rect x="4" y="4" width="8" height="8" rx="1.25" /></svg>
+          </button>
         </div>
       </section>
       <p class="privacy">MailCue sends the open email or pasted text to OpenAI only when you click. Replies are never sent automatically.</p>

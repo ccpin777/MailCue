@@ -54,14 +54,14 @@ The `package.json` version is canonical. The build command synchronizes the Outl
 
    Trust `~/Library/Application Support/MailCue/certs/localhost.pem` in macOS Keychain for the current user, then restart Outlook. The certificate includes `localhost` and `127.0.0.1` in its subject alternative names.
 
-5. To test the menu bar controller before packaging, quit any running MailCue app and double-click `Run.command`. It launches the Python source directly and keeps Terminal open for visible errors. When the source version works, double-click `commands/build-menubar-app.command` to build `dist/MailCue.app` with the same PySide6 and PyInstaller approach used by Coding Deck. The command expects the shared Python environment described above; a fresh clone outside that workspace cannot use it until the build environment is set up. After a successful build, it removes `build/`, `build-logs/`, and `dist/MailCue/`, keeping only `dist/MailCue.app`. Swift and Xcode are not used.
+5. To test the menu bar controller before packaging, quit any running MailCue app and double-click `Run.command`. It launches the Python source directly and keeps Terminal open for visible errors. When the source version works, double-click `commands/build-menubar-app.command` to build `dist/MailCue.app` with the same PySide6 and PyInstaller approach used by Coding Deck. The command expects the shared Python environment described above; a fresh clone outside that workspace cannot use it until the build environment is set up. After a successful build, it removes `build/` and `dist/MailCue/`, keeping `dist/MailCue.app`. The latest three build logs are retained in `build-logs/`, counting successful and failed attempts together. Swift and Xcode are not used.
 
-6. In Outlook for Mac, sideload the project folder's `manifest.xml` using **Tools → Get Add-ins → My Add-ins → Add a custom add-in → Add from File**.
+6. In Outlook for Mac, sideload the project folder's `manifest.xml` using **Tools → Get Add-ins → My Add-ins → Add a custom add-in → Add from File**. See the [Outlook sideloading note](docs/outlook-sideloading.md) for Microsoft's instructions.
 
-7. Open a message in the allowed mailbox and open **MailCue**. In **Settings**, choose **Connect ChatGPT** once and approve plan usage in the browser. OAuth credentials are kept in `~/Library/Application Support/MailCue/Private` with owner-only permissions.
+7. Open a message in the allowed mailbox and open **MailCue**. In **Settings**, choose **Connect ChatGPT** once and approve plan usage in the browser. OAuth credentials are kept in `~/Library/Application Support/MailCue/Private` with owner-only permissions. To use API billing instead, choose **OpenAI API key**, enter the key, and press **Save**. MailCue verifies it and stores it in that private folder with owner-only permissions. API usage is billed separately from a ChatGPT plan.
 
    Existing installations that used `~/Library/Application Support/Outlook Assistant` must quit MailCue and move that folder to `~/Library/Application Support/MailCue` before starting this version. This keeps the existing mailbox setting, certificate, and ChatGPT sign-in. If the destination folder already exists, back up both folders and merge carefully instead of replacing either one.
-8. Open **Settings** to load the connected account's model list. Choose a model to save and apply it immediately; the first listed model is used until you choose another.
+8. Open **Settings** to load the connected service's model list. Choose a model to save and apply it immediately; the first listed model is used until you choose another.
 9. Choose **Email** to process the open message on demand, or **Selected text** to paste only the text you want to use. Translate and Suggest Reply display their output progressively. Enter submits a follow-up immediately: your question appears in the conversation and the input clears while MailCue generates its response. **New request** clears the result, conversation, follow-up input, and Selected text input.
 
 ## Menu bar controller
@@ -70,7 +70,7 @@ Use **Turn On** and **Turn Off** in the menu bar menu to start or stop the local
 
 The packaged app contains a copy of the Bridge and task pane files. Rebuild and relaunch `dist/MailCue.app` after changing project source; the Outlook add-in does not need to be reinstalled when its manifest URL has not changed. The build command checks that `bridge/server.mjs` is present in the app bundle. If a running app reports that the Bridge is missing, quit older MailCue instances and launch the newly built app rather than a separate older copy.
 
-Use either the menu bar app or `npm_start.command` at a time. Both use local ports 1455 and 1456, so starting both will produce an address-in-use error.
+Use either the menu bar app or `commands/npm_start.command` at a time. Both use local ports 1455 and 1456, so starting both will produce an address-in-use error.
 
 ## Local URLs
 
@@ -89,9 +89,9 @@ The bridge binds only to loopback. It does not expose a network listener to othe
 ## Limits and notes
 
 - This prototype uses the documented public Responses API with the ChatGPT-plan OAuth token, not an API key or a private Codex endpoint.
-- OpenAI can change preview behavior or eligibility. Account authorization, model availability, and usage limits must be verified with your own ChatGPT account.
+- ChatGPT model availability and usage limits depend on account authorization. API model availability depends on the API project's permissions; API usage is billed separately.
 - MailCue checks the selected Outlook address and protects its localhost API with a per-run token and Origin validation. This prevents ordinary cross-origin calls, but it cannot provide strict mailbox isolation against a determined process running as the same macOS user. That would require Outlook identity-token validation and Microsoft app registration.
 - The model selector shows the connected account's current visible model list. A listed model may still reject a Responses request; MailCue shows that error so you can choose another listed model.
 - OAuth, model listing, Responses streaming, and Outlook body reads have time limits. A slow or stalled operation returns an error instead of leaving the task pane busy indefinitely.
-- The Add-in content URL is localhost, so the bridge must be running while you use the add-in. The menu bar app starts and stops it; `npm_start.command` remains available as a manual fallback.
+- The Add-in content URL is localhost, so the bridge must be running while you use the add-in. The menu bar app starts and stops it; `commands/npm_start.command` remains available as a manual fallback.
 - Do not commit `config.json`, certificates, or OAuth credentials.

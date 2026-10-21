@@ -12,6 +12,7 @@ const certDir = path.join(appSupportDir, "certs");
 const configFile = path.join(appSupportDir, "config.json");
 const dataDir = path.join(appSupportDir, "Private");
 const authFile = path.join(dataDir, "chatgpt-profile.json");
+const apiKeyFile = path.join(dataDir, "openai-api-key");
 const hostFile = path.join(dataDir, "host-id");
 const appName = "MailCue";
 const authorizationEndpoint = "https://auth.openai.com/api/accounts/authorize";
@@ -247,6 +248,29 @@ async function storedAuth() {
   return readJson(authFile, null);
 }
 
+async function readApiKey() {
+  try { return (await fs.readFile(apiKeyFile, "utf8")).trim(); }
+  catch (error) { if (error.code === "ENOENT") return ""; throw error; }
+}
+
+async function saveApiKey(key) {
+  await fs.mkdir(dataDir, { recursive: true, mode: 0o700 });
+  await fs.chmod(dataDir, 0o700);
+  const temp = `${apiKeyFile}.${crypto.randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(temp, key, { mode: 0o600 });
+    await fs.rename(temp, apiKeyFile);
+    await fs.chmod(apiKeyFile, 0o600);
+  } finally {
+    await fs.rm(temp, { force: true });
+  }
+}
+
+async function currentProvider() {
+  const config = await readJson(configFile);
+  return config.provider === "api" ? "api" : "chatgpt";
+}
+
 async function beginSignIn(res) {
   if (signInStarting || (pendingAuth && Date.now() - pendingAuth.createdAt <= 300000)) {
     return json(res, 409, { error: "A ChatGPT sign-in is already in progress. Finish it or wait a few minutes before starting another." });
@@ -362,17 +386,22 @@ async function readRequest(req) {
   return payload;
 }
 
-async function availableModels(auth) {
+async function availableModels(credential, provider) {
   const { response, data } = await fetchJson(`${resource}/models`, {
-    headers: { Authorization: `Bearer ${auth.accessToken}` },
-  }, 15000, "Loading ChatGPT models timed out. Check your connection and try again.");
-  if (!response.ok) throw new Error(data.error?.message || "Could not load models for this ChatGPT account.");
+    headers: { Authorization: `Bearer ${provider === "api" ? credential : credential.accessToken}` },
+  }, 30000,
+  provider === "api" ? "Loading OpenAI API models timed out. Check your connection to api.openai.com and try again."
+    : "Loading ChatGPT models timed out. Check your connection and try again.");
+  if (!response.ok) throw new Error(data.error?.message || "Could not load OpenAI models.");
+  if (provider === "api") return (Array.isArray(data.data) ? data.data : [])
+    .filter((entry) => typeof entry.id === "string" && entry.id)
+    .map((entry) => ({ slug: entry.id, displayName: entry.id }));
   return (Array.isArray(data.models) ? data.models : [])
     .filter((entry) => entry.visibility === "list" && typeof entry.slug === "string" && entry.slug)
     .map((entry) => ({ slug: entry.slug, displayName: String(entry.display_name || entry.slug) }));
 }
 
-async function requestResponse(auth, model, instruction, input, onDelta, signal) {
+async function requestResponse(credential, provider, model, instruction, input, onDelta, signal) {
   const controller = new AbortController();
   const abortFromCaller = () => controller.abort();
   if (signal?.aborted) controller.abort();
@@ -387,7 +416,7 @@ async function requestResponse(auth, model, instruction, input, onDelta, signal)
   try {
     const response = await fetch(`${resource}/responses`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${auth.accessToken}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${provider === "api" ? credential : credential.accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model, instructions: instruction, input: [{ role: "user", content: input }], store: false, stream: true }),
       signal: controller.signal,
     });
@@ -437,7 +466,7 @@ async function requestResponse(auth, model, instruction, input, onDelta, signal)
     if (!completed) throw new Error("The response stream ended before completion.");
     return text.trim();
   } catch (error) {
-    if (controller.signal.aborted) throw new Error("The ChatGPT response timed out. Try again or use a shorter excerpt.");
+    if (controller.signal.aborted) throw new Error("The OpenAI response timed out. Try again or use a shorter excerpt.");
     throw error;
   } finally {
     clearTimeout(idleTimer);
@@ -448,12 +477,15 @@ async function requestResponse(auth, model, instruction, input, onDelta, signal)
 }
 
 async function transform(payload, onDelta, signal) {
-  const auth = await activeAuth();
-  if (!auth || !auth.scopes.includes("chatgpt.tokens.use.direct")) throw new Error("Connect ChatGPT and authorize plan usage first.");
-  const models = await availableModels(auth);
+  const provider = await currentProvider();
+  const credential = provider === "api" ? await readApiKey() : await activeAuth();
+  if (provider === "api" ? !credential : (!credential || !credential.scopes.includes("chatgpt.tokens.use.direct"))) {
+    throw new Error(provider === "api" ? "Add an OpenAI API key in Settings first." : "Connect ChatGPT and authorize plan usage first.");
+  }
+  const models = await availableModels(credential, provider);
   const config = await readJson(configFile);
-  const model = config.modelSlug || models[0]?.slug;
-  if (!model) throw new Error("No models are available for this ChatGPT account. Open Settings and refresh the model list.");
+  const model = (provider === "api" ? config.apiModelSlug : config.modelSlug) || models[0]?.slug;
+  if (!model) throw new Error("No models are available. Open Settings and refresh the model list.");
   if (!models.some((entry) => entry.slug === model)) throw new Error("The saved model is no longer available. Open Settings and select an available model.");
 
   const instruction = payload.action === "translate"
@@ -471,7 +503,7 @@ async function transform(payload, onDelta, signal) {
     if (priorTurns) input += `\n\nConversation so far:\n${priorTurns}`;
     input += `\n\nUser's follow-up question:\n${payload.question}`;
   }
-  return requestResponse(auth, model, instruction, input, onDelta, signal);
+  return requestResponse(credential, provider, model, instruction, input, onDelta, signal);
 }
 
 async function updateConfig(patch) {
@@ -506,6 +538,9 @@ const httpsServer = https.createServer({
       return json(res, 200, {
         allowedOutlookEmail: String(config.allowedOutlookEmail || "").trim().toLowerCase(),
         modelSlug: String(config.modelSlug || ""),
+        apiModelSlug: String(config.apiModelSlug || ""),
+        provider: config.provider === "api" ? "api" : "chatgpt",
+        apiKeyConfigured: Boolean(await readApiKey()),
         translationLanguage: String(config.translationLanguage || "Traditional Chinese (Taiwan)"),
       });
     }
@@ -518,6 +553,22 @@ const httpsServer = https.createServer({
       await updateConfig({ allowedOutlookEmail });
       return json(res, 200, { allowedOutlookEmail });
     }
+    if (req.method === "POST" && url.pathname === "/api/provider") {
+      const payload = await readRequest(req);
+      if (!["chatgpt", "api"].includes(payload.provider)) return json(res, 400, { error: "Choose ChatGPT sign-in or OpenAI API key." });
+      if (payload.provider === "api" && !(await readApiKey())) return json(res, 400, { error: "Save an OpenAI API key before switching to API mode." });
+      await updateConfig({ provider: payload.provider });
+      return json(res, 200, { provider: payload.provider });
+    }
+    if (req.method === "POST" && url.pathname === "/api/api-key") {
+      const payload = await readRequest(req);
+      const key = typeof payload.apiKey === "string" ? payload.apiKey.trim() : "";
+      if (!key || key.length > 512 || /[\u0000-\u001f\u007f]/.test(key)) return json(res, 400, { error: "Enter a valid OpenAI API key." });
+      const models = await availableModels(key, "api");
+      if (!models.length) return json(res, 400, { error: "The API key was accepted, but no models were returned for this project." });
+      await saveApiKey(key);
+      return json(res, 200, { apiKeyConfigured: true, modelCount: models.length });
+    }
     if (req.method === "POST" && url.pathname === "/api/translation-language") {
       const payload = await readRequest(req);
       const translationLanguage = typeof payload.translationLanguage === "string" ? payload.translationLanguage.trim() : "";
@@ -528,30 +579,41 @@ const httpsServer = https.createServer({
       return json(res, 200, { translationLanguage });
     }
     if (req.method === "GET" && url.pathname === "/api/models") {
-      const auth = await activeAuth();
-      if (!auth || !auth.scopes.includes("chatgpt.tokens.use.direct")) return json(res, 401, { error: "Connect ChatGPT before loading models." });
-      const models = await availableModels(auth);
+      const provider = await currentProvider();
+      const credential = provider === "api" ? await readApiKey() : await activeAuth();
+      if (provider === "api" ? !credential : (!credential || !credential.scopes.includes("chatgpt.tokens.use.direct"))) {
+        return json(res, 401, { error: provider === "api" ? "Save an OpenAI API key before loading models." : "Connect ChatGPT before loading models." });
+      }
+      const models = await availableModels(credential, provider);
       const config = await readJson(configFile);
-      const savedModelExists = models.some((model) => model.slug === config.modelSlug);
-      const selectedModel = savedModelExists ? config.modelSlug : models[0]?.slug || "";
-      if (config.modelSlug && selectedModel && !savedModelExists) await updateConfig({ modelSlug: selectedModel });
+      const modelField = provider === "api" ? "apiModelSlug" : "modelSlug";
+      const savedModelExists = models.some((model) => model.slug === config[modelField]);
+      const selectedModel = savedModelExists ? config[modelField] : models[0]?.slug || "";
+      if (config[modelField] && selectedModel && !savedModelExists) await updateConfig({ [modelField]: selectedModel });
       return json(res, 200, { models, selectedModel });
     }
     if (req.method === "POST" && url.pathname === "/api/model") {
       const payload = await readRequest(req);
-      if (typeof payload.modelSlug !== "string" || !payload.modelSlug.trim()) return json(res, 400, { error: "Select a ChatGPT model first." });
-      const auth = await activeAuth();
-      if (!auth || !auth.scopes.includes("chatgpt.tokens.use.direct")) return json(res, 401, { error: "Connect ChatGPT before selecting a model." });
-      const models = await availableModels(auth);
+      if (typeof payload.modelSlug !== "string" || !payload.modelSlug.trim()) return json(res, 400, { error: "Select a model first." });
+      const provider = await currentProvider();
+      const credential = provider === "api" ? await readApiKey() : await activeAuth();
+      if (provider === "api" ? !credential : (!credential || !credential.scopes.includes("chatgpt.tokens.use.direct"))) {
+        return json(res, 401, { error: provider === "api" ? "Save an OpenAI API key before selecting a model." : "Connect ChatGPT before selecting a model." });
+      }
+      const models = await availableModels(credential, provider);
       const selected = models.find((model) => model.slug === payload.modelSlug);
-      if (!selected) return json(res, 400, { error: "That model is not available to the connected ChatGPT account. Refresh the list." });
-      await updateConfig({ modelSlug: selected.slug });
+      if (!selected) return json(res, 400, { error: "That model is not available. Refresh the list." });
+      await updateConfig({ [provider === "api" ? "apiModelSlug" : "modelSlug"]: selected.slug });
       return json(res, 200, { modelSlug: selected.slug, displayName: selected.displayName });
     }
     if (req.method === "GET" && url.pathname === "/api/session") {
+      if (await currentProvider() === "api") {
+        const configured = Boolean(await readApiKey());
+        return json(res, 200, { connected: configured, provider: "api", email: "", error: "" });
+      }
       let auth = null;
       try { auth = await activeAuth(); } catch (error) { signInError = error.message; }
-      return json(res, 200, { connected: Boolean(auth?.scopes.includes("chatgpt.tokens.use.direct")), email: auth?.email || "", error: signInError });
+      return json(res, 200, { connected: Boolean(auth?.scopes.includes("chatgpt.tokens.use.direct")), provider: "chatgpt", email: auth?.email || "", error: signInError });
     }
     if (req.method === "POST" && url.pathname === "/api/sign-in") return await beginSignIn(res);
     if (req.method === "POST" && url.pathname === "/api/transform") {

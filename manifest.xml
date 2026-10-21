@@ -76,14 +76,14 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:1455/assets/icon-16.png?v=5"/>
-        <bt:Image id="Icon.20x20" DefaultValue="https://localhost:1455/assets/icon-20.png?v=5"/>
-        <bt:Image id="Icon.24x24" DefaultValue="https://localhost:1455/assets/icon-24.png?v=5"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:1455/assets/icon-32.png?v=5"/>
-        <bt:Image id="Icon.40x40" DefaultValue="https://localhost:1455/assets/icon-40.png?v=5"/>
-        <bt:Image id="Icon.48x48" DefaultValue="https://localhost:1455/assets/icon-48.png?v=5"/>
-        <bt:Image id="Icon.64x64" DefaultValue="https://localhost:1455/assets/icon-64.png?v=5"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:1455/assets/icon-80.png?v=5"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:1455/assets/icon-16.png?v=6"/>
+        <bt:Image id="Icon.20x20" DefaultValue="https://localhost:1455/assets/icon-20.png?v=6"/>
+        <bt:Image id="Icon.24x24" DefaultValue="https://localhost:1455/assets/icon-24.png?v=6"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:1455/assets/icon-32.png?v=6"/>
+        <bt:Image id="Icon.40x40" DefaultValue="https://localhost:1455/assets/icon-40.png?v=6"/>
+        <bt:Image id="Icon.48x48" DefaultValue="https://localhost:1455/assets/icon-48.png?v=6"/>
+        <bt:Image id="Icon.64x64" DefaultValue="https://localhost:1455/assets/icon-64.png?v=6"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:1455/assets/icon-80.png?v=6"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="TaskPane.Url" DefaultValue="https://localhost:1455/taskpane.html"/>

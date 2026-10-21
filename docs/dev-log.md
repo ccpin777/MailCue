@@ -1,5 +1,28 @@
 # MailCue development log
 
+## 2026-10-21 — Project root organization
+
+- Moved the manual Bridge launcher into `commands/`; kept `Run.command` at the project root and its path resolution intact.
+- Removed the Outlook screenshot at the user's request and kept the sideloading URL and steps in `docs/outlook-sideloading.md`.
+- Updated README and user-guide references to the new command paths. No code changes were made to the Outlook task pane; the blue rounded focus border in the screenshot belongs to Outlook's host UI, outside the add-in page's CSS.
+- Checked launcher shell syntax, command-path references, and `git diff --check`. Outlook focus rendering remains unverified on the target Mac.
+
+## 2026-10-21 — Optional OpenAI API key connection
+
+- Added an OpenAI API key option alongside ChatGPT sign-in. The key is verified against the API model list before it is saved in MailCue's private data folder with owner-only permissions.
+- Added provider-specific model selections and updated Settings to show which connection method is active. Documentation clarifies that API usage is billed separately from a ChatGPT plan.
+- No API key, local config, certificate, or packaged app was included in the project changes.
+
+## 2026-10-21 — Outlook icon contrast and task pane interaction polish
+
+- Changed the Outlook ribbon icon from near-black to a fixed blue that remains visible on light and dark Outlook surfaces. Regenerated each 16, 20, 24, 32, 40, 48, 64, and 80 px PNG directly from the SVG source with 4× supersampling; no small raster icon is enlarged to make another size.
+- Bumped manifest icon asset URLs to `v=6` to avoid Outlook's cached `v=5` images. The menu bar icon source and stroke were left unchanged.
+- Added dark-mode hover colors for the Email mode selector, New request, Settings, and Email/Selected text menu items; brightened the Settings glyph in dark mode.
+- The mode menu now closes when clicking elsewhere in the task pane.
+- Follow-up generation now exposes a square Stop response button while streaming. It aborts the task pane request, which closes the stream so the Bridge can abort upstream work. Partial output is retained and marked stopped; an empty partial answer is removed while the user's question remains.
+- Removed the repeated You label from user bubbles; right alignment and bubble color distinguish user turns, while MailCue replies retain their label.
+- JavaScript syntax, `git diff --check`, and all eight PNG dimensions passed. The regenerated icons were visually inspected on light and dark backgrounds. Manifest XML parsing and live Outlook/Retina rendering were not available in this workspace.
+
 ## 2026-10-20 — Configurable translation language
 
 - Added a **Translate to** field in Settings with common language suggestions and a default of **Traditional Chinese (Taiwan)**. Users can enter another language name and save it locally.

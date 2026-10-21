@@ -21,6 +21,12 @@ main { max-width: 560px; margin: 0 auto; padding: 18px 16px 28px; }
 .connection-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #d64545; }
 .connection-dot.is-connected { background: #2fa779; }
 .settings-panel > button { min-height: 34px; padding: 7px 10px; font-size: 12px; }
+.provider-setting { display: grid; gap: 7px; margin: 12px 0; }
+.provider-setting select { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid #cbd3da; border-radius: 8px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+.api-key-row { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.api-key-row input { flex: 1 1 auto; width: 0; min-width: 0; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd3da; border-radius: 8px; background: #fff; color: #17212b; font: inherit; font-size: 12px; }
+.api-key-row button { flex: 0 0 auto; min-height: 36px; padding: 7px 12px; font-size: 12px; }
+.settings-panel .api-key-help { margin: 0; font-size: 11px; }
 .current-account { color: #65717c !important; font-size: 11px !important; }
 .account-setting { display: grid; gap: 7px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e1e5e9; }
 .account-input-row { display: flex; min-width: 0; align-items: center; gap: 8px; }
@@ -53,14 +59,19 @@ button:disabled { opacity: .48; cursor: default; }
 .chat-turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
 .follow-up { display: grid; gap: 8px; margin-top: 16px; }
 .follow-up button { justify-self: end; min-height: 36px; padding: 8px 13px; font-size: 12px; }
+#ask-follow-up.is-stopping { width: 36px; min-width: 36px; padding: 0; }
+.stop-response-icon { display: block; width: 14px; height: 14px; fill: currentColor; }
 .privacy { margin: 16px 2px 0; color: #64717c; font-size: 11px; line-height: 1.5; }
 @media (max-width: 340px) { main { padding: 14px 12px 22px; } .actions { gap: 7px; } .actions button { padding-inline: 6px; font-size: 12px; } }
 @media (prefers-color-scheme: dark) {
   :root, body { background: #1f2329; color: #f2f4f7; }
   .settings-panel p, .input-label, #status, .privacy { color: #bbc3cb; }
   .settings-panel, .result-card, .toolbar-button, .mode-menu, button.secondary { border-color: #424b55; background: #292f36; color: #f2f4f7; }
+  .toolbar-button:hover { border-color: #59636f; background: #343b44; }
+  .settings-button img { filter: brightness(0) invert(1); }
+  .provider-setting select, .api-key-row input { border-color: #424b55; background: #292f36; color: #f2f4f7; }
   .mode-menu button { color: #f2f4f7; }
-  .mode-menu button:hover { background: #343b44; }
+  .mode-menu button:hover, .mode-menu button:focus-visible { background: #343b44; color: #f2f4f7; }
   .account-setting { border-color: #424b55; }
   .account-setting input { border-color: #424b55; background: #292f36; color: #f2f4f7; }
   .model-setting { border-color: #424b55; }

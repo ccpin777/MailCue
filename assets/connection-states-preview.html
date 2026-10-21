@@ -51,13 +51,14 @@
     .turn.user { justify-self: end; background: #e9f2fb; }
     .follow-up { margin-top: 16px; }
     .follow-up textarea { min-height: 72px; }
+    .prompt-hint { margin: 7px 2px 0; color: #68758a; font-size: 11px; line-height: 1.45; }
     .ask { display: block; min-height: 34px; margin: 8px 0 0 auto; padding: 7px 12px; border: 1px solid #cbd3da; border-radius: 8px; background: white; color: #26364f; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
     @media (max-width: 340px) { .pane { padding: 13px; } .actions { gap: 7px; } .actions button { font-size: 12px; } }
   </style>
 </head>
 <body>
   <main>
-    <p class="preview-note">Interactive layout preview. The buttons show sample results only.</p>
+    <p class="preview-note">Interactive layout preview. All responses are sample text; nothing is sent.</p>
     <div class="preview-actions">
       <button id="translation-demo" class="preview-toggle" type="button">Show translation chat</button>
       <button id="reply-demo" class="preview-toggle" type="button">Show reply chat</button>
@@ -111,7 +112,8 @@
         <div id="result-text" class="result-text"></div>
         <div id="conversation" class="conversation"></div>
         <div class="follow-up">
-          <textarea id="follow-up" placeholder="Ask or request a revision…"></textarea>
+          <textarea id="follow-up" placeholder="Ask a question, adjust the tone, or check the reply…"></textarea>
+          <p class="prompt-hint">Try: “What does this imply?”, “Make it warmer and shorter”, or “Check for missed questions or promises.”</p>
           <button id="ask" class="ask" type="button">Ask</button>
         </div>
       </section>
@@ -181,11 +183,35 @@
       userTurn.textContent = question;
       const assistantTurn = document.createElement("div");
       assistantTurn.className = "turn";
-      assistantTurn.textContent = document.getElementById("result-title").textContent === "Suggested reply"
-        ? "Sure — here’s a warmer version: Thanks so much for clarifying! I understand now, and I’ll check with the team and keep you posted."
-        : "It means the current role or contract is being renewed, rather than a new job offer. I can also make the reply warmer or shorter.";
+      const prompt = question.toLowerCase();
+      const isReply = document.getElementById("result-title").textContent === "Suggested reply";
+      if (/check|review|miss|promise|deadline|漏|檢查|承諾|期限/.test(prompt)) {
+        assistantTurn.textContent = isReply
+          ? "It acknowledges the clarification and says you’ll check with the team. It doesn’t promise a specific deadline or include personal information."
+          : "The message clarifies that this is a renewal of the current role, not a new job offer. There’s no specific deadline or request to answer in this excerpt.";
+      } else if (/short|brief|concise|短|精簡/.test(prompt)) {
+        assistantTurn.textContent = isReply
+          ? "Thanks for clarifying! I’ll check with the team and keep you posted."
+          : "In short: they’re renewing the current role, not offering a new job.";
+      } else if (/warm|friendly|polite|自然|親切|友善|正式/.test(prompt)) {
+        assistantTurn.textContent = isReply
+          ? "Thanks so much for clarifying! I understand now, and I’ll check with the team and keep you posted."
+          : "The wording is a straightforward clarification. It doesn’t sound like a new offer; they’re explaining that the current role is being renewed.";
+      } else if (/imply|mean|意思|暗示|解釋|explain/.test(prompt)) {
+        assistantTurn.textContent = "They mean the current role or contract is being renewed. They are clarifying that this is not a separate job offer.";
+      } else if (isReply) {
+        assistantTurn.textContent = "I can tailor the reply to that. For example: “Thanks for clarifying. I’ll check with the team and keep you updated.”";
+      } else {
+        assistantTurn.textContent = "This sentence says the current role is being renewed, rather than describing a new job offer. You can ask me to explain the tone or help draft a reply.";
+      }
       conversation.append(userTurn, assistantTurn);
       document.getElementById("follow-up").value = "";
+    });
+    document.getElementById("follow-up").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        document.getElementById("ask").click();
+      }
     });
     newRequest.addEventListener("click", () => {
       modeWrap.hidden = false;
@@ -243,8 +269,8 @@
       "Suggested reply",
       "Thanks for clarifying. I understand, and I’ll check with the team and keep you updated.",
       [
-        ["語氣可以親切一點嗎？", "Thanks so much for clarifying! I understand now, and I’ll check with the team and keep you posted."],
-        ["再短一點？", "Thanks for clarifying! I’ll check with the team and keep you posted."],
+        ["Make it warm, professional, and shorter.", "Thanks for clarifying! I’ll check with the team and keep you posted."],
+        ["Check it for missed questions or deadline promises.", "It acknowledges the clarification and says you’ll check with the team. It doesn’t promise a specific deadline or include personal information."],
       ]
     ));
   </script>
